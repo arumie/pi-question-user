@@ -113,6 +113,9 @@ function buildMultiSelected(state: QuestionnaireState, runtime: QuestionnaireRun
 			if (typeof label === "string") out.push(label);
 		}
 	}
+	const draft = state.inputMode ? runtime.inputBuffer : state.customDraftsByTab.get(state.currentTab);
+	const custom = draft?.trim() ?? "";
+	if (custom.length > 0 && !out.includes(custom)) out.push(custom);
 	return out;
 }
 
@@ -232,9 +235,9 @@ function routeMultiSelectTab(
 ): QuestionnaireAction {
 	const focusedKind = runtime.currentItem?.kind;
 	const focusedMeta = focusedKind ? ROW_INTENT_META[focusedKind] : undefined;
-	// Space toggles the focused row's checkbox. Suppressed on rows whose META declares
-	// `blocksMultiToggle` (the Next sentinel) or `activatesInputMode` (the "Type
-	// something." row — it is an inline input, not a checkable option).
+	// Space toggles an authored option's checkbox. The "Type something." row is an
+	// inline input, so Space is text while it is being edited; any non-blank text in
+	// that input is included automatically when the multi-select is committed.
 	if (data === SPACE_KEY) {
 		if (focusedMeta?.blocksMultiToggle) return { kind: "ignore" };
 		if (focusedMeta?.activatesInputMode) return { kind: "ignore" };

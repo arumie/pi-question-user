@@ -25,12 +25,12 @@ pi -e /absolute/path/to/pi-question-user
 ## What it does
 
 - Presents up to four questions in one tabbed dialog, with 2–4 authored options per question.
-- Appends a `Type something.` row so the user can always answer in their own words.
+- Appends a `Type something.` row so the user can always answer in their own words; in multi-select mode, non-blank custom text is selected alongside checked options.
 - Supports markdown previews, multiline answers, external-editor input, and per-question or global notes.
 - Returns structured answers to the model and works in terminal, RPC, and ACP hosts.
 - Removes the tool from non-interactive runs instead of failing every call.
 
-The terminal dialog uses `↑`/`↓` to browse, `Enter` to select, `Tab` to move between questions, `n` to add a note, `Ctrl+]` to collapse the dialog, and `Esc` to cancel. `Shift+Enter`, `Ctrl+G`, and `Ctrl+U` control multiline input, the external editor, and draft clearing respectively.
+The terminal dialog uses `↑`/`↓` to browse, `Enter` to select, `Tab` to move between questions, `n` to add a note, `Ctrl+]` to collapse the dialog, and `Esc` to cancel. In a multi-select question, type in `Type something.` and the non-blank text is checked and submitted with the authored selections. `Shift+Enter`, `Ctrl+G`, and `Ctrl+U` control multiline input, the external editor, and draft clearing respectively.
 
 ## Configuration
 

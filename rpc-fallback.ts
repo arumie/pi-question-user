@@ -16,8 +16,8 @@
  * tabbed multi-question review (one dialog per question), and multi-select is
  * a free-text numbers input instead of checkbox rows. The "Type something."
  * escape is preserved on both variants — multi-select treats any non-index
- * input as a typed custom answer — matching
- * `ROW_INTENT_META.other.autoAppendOnMultiSelect`.
+ * input as one selected custom value, matching the TUI's auto-selected custom
+ * row.
  */
 
 import { displayLabel } from "./state/row-intent.js";
@@ -154,8 +154,8 @@ async function askMultiSelect(
 		return { questionIndex, question: q.question, kind: "multi", answer: null, selected };
 	}
 	// Any non-index token (words, or an out-of-range number like "13" for three
-	// options) means the user typed an answer, not a selection. Preserve it
-	// verbatim as a custom answer instead of silently dropping their input —
-	// this is also the multi-select "Type something." escape.
-	return { questionIndex, question: q.question, kind: "custom", answer: trimmed };
+	// options) means the user typed an answer, not a selection. Preserve it as
+	// the selected custom value instead of silently dropping their input — this
+	// is also the multi-select "Type something." escape.
+	return { questionIndex, question: q.question, kind: "multi", answer: null, selected: [trimmed] };
 }

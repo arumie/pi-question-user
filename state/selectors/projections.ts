@@ -13,6 +13,7 @@ function emptyMultiSelectProps(ctx: PerTabBindingContext): MultiSelectViewProps 
 		rows: [],
 		other: {
 			active: false,
+			checked: false,
 			inputMode: false,
 			inputBuffer: ctx.inputBuffer,
 			inputCursorOffset: ctx.inputCursorOffset,
@@ -42,10 +43,13 @@ export const selectMultiSelectProps: PerTabSelector<MultiSelectViewProps> = (sta
 	}
 	const otherActive = focused && state.optionIndex === question.options.length;
 	const nextActive = focused && state.optionIndex === question.options.length + 1;
+	const customDraft =
+		state.currentTab === ctx.i && state.inputMode ? ctx.inputBuffer : (state.customDraftsByTab.get(ctx.i) ?? "");
 	return {
 		rows,
 		other: {
 			active: otherActive,
+			checked: customDraft.trim().length > 0,
 			inputMode: state.inputMode,
 			inputBuffer: ctx.inputBuffer,
 			inputCursorOffset: ctx.inputCursorOffset,

@@ -63,13 +63,26 @@ function syncMultiSelectFromAnswers(
 	return indices;
 }
 
-function persistMultiSelectAnswer(state: QuestionnaireState, ctx: ApplyContext): ReadonlyMap<number, QuestionAnswer> {
-	const q = ctx.questions[state.currentTab];
-	if (!q?.multiSelect) return state.answers;
+function checkedOptionLabels(state: QuestionnaireState, ctx: ApplyContext, tab: number): string[] {
+	const q = ctx.questions[tab];
+	if (!q?.multiSelect) return [];
 	const selected: string[] = [];
 	for (let i = 0; i < q.options.length; i++) {
 		if (state.multiSelectChecked.has(i)) selected.push(q.options[i]!.label);
 	}
+	return selected;
+}
+
+function appendCustomSelection(selected: string[], draft: string | null | undefined): void {
+	const custom = draft?.trim() ?? "";
+	if (custom.length > 0 && !selected.includes(custom)) selected.push(custom);
+}
+
+function persistMultiSelectAnswer(state: QuestionnaireState, ctx: ApplyContext): ReadonlyMap<number, QuestionAnswer> {
+	const q = ctx.questions[state.currentTab];
+	if (!q?.multiSelect) return state.answers;
+	const selected = checkedOptionLabels(state, ctx, state.currentTab);
+	appendCustomSelection(selected, state.customDraftsByTab.get(state.currentTab));
 	const out = new Map(state.answers);
 	if (selected.length === 0) {
 		out.delete(state.currentTab);
@@ -195,6 +208,18 @@ const tabSwitchHandler: Handler<"tab_switch"> = (state, action, ctx) => switchTa
 
 const confirmHandler: Handler<"confirm"> = (state, action, ctx) => {
 	let answer = action.answer;
+	const isCustomMulti = answer.kind === "custom" && ctx.questions[answer.questionIndex]?.multiSelect === true;
+	const customAnswer = isCustomMulti && typeof answer.answer === "string" ? answer.answer.trim() : "";
+	if (isCustomMulti) {
+		const selected = checkedOptionLabels(state, ctx, answer.questionIndex);
+		appendCustomSelection(selected, customAnswer);
+		answer = {
+			...answer,
+			kind: "multi",
+			answer: null,
+			selected,
+		};
+	}
 	if (answer.kind === "option" && answer.answer) {
 		const q = ctx.questions[answer.questionIndex];
 		const matched = q?.options.find((o) => o.label === answer.answer);
@@ -208,17 +233,17 @@ const confirmHandler: Handler<"confirm"> = (state, action, ctx) => {
 	}
 	const answers = new Map(state.answers);
 	answers.set(answer.questionIndex, answer);
-	// Custom free-text on a multi-select tab is mutually exclusive with checkbox selections:
-	// clear the checked set immediately so [✔] glyphs vanish on Enter. (A custom answer
-	// carries no `selected` array, so syncMultiSelectFromAnswers keeps it empty on tab-back.)
-	const isCustomMulti = answer.kind === "custom" && ctx.questions[answer.questionIndex]?.multiSelect === true;
-	const customDraftsByTab =
-		answer.kind === "custom" ? withoutCustomDraft(state, answer.questionIndex) : state.customDraftsByTab;
+	const customDraftsByTab = isCustomMulti
+		? customAnswer.length > 0
+			? setCustomDraft(state, answer.questionIndex, customAnswer)
+			: withoutCustomDraft(state, answer.questionIndex)
+		: answer.kind === "custom"
+			? withoutCustomDraft(state, answer.questionIndex)
+			: state.customDraftsByTab;
 	const next: QuestionnaireState = {
 		...state,
 		answers,
 		customDraftsByTab,
-		...(isCustomMulti ? { multiSelectChecked: new Set<number>() } : {}),
 	};
 	if (action.autoAdvanceTab !== undefined) return switchTabResult(next, action.autoAdvanceTab, ctx);
 	return doneFor(next, ctx, false);
@@ -236,6 +261,8 @@ const toggleHandler: Handler<"toggle"> = (state, action, ctx) => {
 const multiConfirmHandler: Handler<"multi_confirm"> = (state, action, ctx) => {
 	const q = ctx.questions[state.currentTab];
 	if (!q) return { state, effects: [] };
+	const selected = [...action.selected];
+	appendCustomSelection(selected, state.customDraftsByTab.get(state.currentTab));
 	const pendingNotes = state.notesByTab.get(state.currentTab);
 	const answers = new Map(state.answers);
 	answers.set(state.currentTab, {
@@ -243,7 +270,7 @@ const multiConfirmHandler: Handler<"multi_confirm"> = (state, action, ctx) => {
 		question: q.question,
 		kind: "multi",
 		answer: null,
-		selected: action.selected,
+		selected,
 		...(pendingNotes && pendingNotes.length > 0 ? { notes: pendingNotes } : {}),
 	});
 	const synced: QuestionnaireState = {
