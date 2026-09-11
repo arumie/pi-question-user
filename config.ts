@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { isAbsolute, join } from "node:path";
+import { MAX_QUESTIONS } from "./tool/types.js";
 
 /** Key spec for the overlay collapse/expand shortcut, e.g. `"ctrl+]"` or `"alt+o"`. */
 export type CollapseKeySpec = string;
@@ -15,6 +16,8 @@ export interface GuidanceFields {
 }
 
 export interface QuestionUserConfig {
+	/** Maximum number of questions accepted per tool invocation. Defaults to 4. */
+	maxQuestions?: number;
 	guidance?: GuidanceFields;
 	/**
 	 * Key spec for the collapse/expand shortcut, in the same format as pi-coding-agent
@@ -134,6 +137,11 @@ function loadJsonConfigWithLegacyFallback<T>(name: string): T {
 
 export function loadConfig(): QuestionUserConfig {
 	return loadJsonConfigWithLegacyFallback<QuestionUserConfig>("question-user");
+}
+
+/** Resolve the configured question limit, falling back for missing or unusable values. */
+export function resolveMaxQuestions(value: unknown): number {
+	return typeof value === "number" && Number.isSafeInteger(value) && value >= 1 ? value : MAX_QUESTIONS;
 }
 
 /** Extract only valid guidance overrides from an untrusted config value. */

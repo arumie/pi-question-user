@@ -16,12 +16,16 @@ export type ValidationResult = { ok: true } | { ok: false; error: QuestionnaireE
  * `no_ui` (which depends on `ctx.hasUI` and stays inline at the call site).
  * `reserved_label` MUST short-circuit before `duplicate_option_label`.
  */
-export function validateQuestionnaire(typed: QuestionParams): ValidationResult {
+export function validateQuestionnaire(typed: QuestionParams, maxQuestions = MAX_QUESTIONS): ValidationResult {
 	if (typed.questions.length === 0) {
 		return { ok: false, error: "no_questions", message: ERROR_NO_QUESTIONS };
 	}
-	if (typed.questions.length > MAX_QUESTIONS) {
-		return { ok: false, error: "too_many_questions", message: ERROR_TOO_MANY_QUESTIONS };
+	if (typed.questions.length > maxQuestions) {
+		return {
+			ok: false,
+			error: "too_many_questions",
+			message: `Error: At most ${maxQuestions} questions are allowed per invocation`,
+		};
 	}
 
 	const seenQuestions = new Set<string>();

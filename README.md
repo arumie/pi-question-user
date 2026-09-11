@@ -24,7 +24,7 @@ pi -e /absolute/path/to/pi-question-user
 
 ## What it does
 
-- Presents up to four questions in one tabbed dialog, with 2–4 authored options per question.
+- Presents up to the configured question limit in one tabbed dialog (four by default), with 2–4 authored options per question.
 - Appends a `Type something.` row so the user can always answer in their own words; in multi-select mode, non-blank custom text is selected alongside checked options.
 - Supports markdown previews, multiline answers, external-editor input, and per-question or global notes.
 - Returns structured answers to the model and works in terminal, RPC, and ACP hosts.
@@ -38,6 +38,7 @@ Optional settings live in `~/.config/question-user/config.json`; the file is rea
 
 | Setting | What it does | Default |
 | --- | --- | --- |
+| `maxQuestions` | Maximum number of questions accepted in one invocation. Must be a positive safe integer. | `4` |
 | `collapseKey` | Key that collapses and expands the dialog. Use a Pi keybinding id such as `alt+o`; set it to `off` to disable the shortcut. | `ctrl+]` |
 | `guidance.description` | Replaces the complete tool description shown to the model when set to a non-empty string. | Built-in description |
 | `guidance.promptSnippet` | Replaces the one-line tool description in the system prompt. | Built-in snippet |
@@ -46,10 +47,10 @@ Optional settings live in `~/.config/question-user/config.json`; the file is rea
 Example:
 
 ```json
-{ "collapseKey": "alt+o" }
+{ "maxQuestions": 8, "collapseKey": "alt+o" }
 ```
 
-Malformed JSON or unusable individual values fall back to the defaults with no hard failure.
+Malformed JSON or unusable individual values fall back to the defaults with no hard failure. The configured question limit is applied to the tool schema, runtime validation, and built-in prompt guidance.
 
 The dialog UI is intentionally English-only and has no localization dependency.
 

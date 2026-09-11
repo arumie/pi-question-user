@@ -4,8 +4,8 @@ import { LABELS_BY_KIND, ROW_INTENT_META } from "../state/row-intent.js";
 export const MAX_QUESTIONS = 4;
 export const MIN_OPTIONS = 2;
 export const MAX_OPTIONS = 4;
-export const MAX_HEADER_LENGTH = 16;
-export const MAX_LABEL_LENGTH = 60;
+export const MAX_HEADER_LENGTH = 50;
+export const MAX_LABEL_LENGTH = 200;
 
 /**
  * User-facing labels for the three runtime sentinel rows, keyed by their
@@ -78,15 +78,23 @@ export const QuestionSchema = Type.Object({
 	),
 });
 
-export const QuestionsSchema = Type.Array(QuestionSchema, {
-	minItems: 1,
-	maxItems: MAX_QUESTIONS,
-	description: "Questions to ask the user (1-4 questions)",
-});
+export function createQuestionsSchema(maxQuestions = MAX_QUESTIONS) {
+	return Type.Array(QuestionSchema, {
+		minItems: 1,
+		maxItems: maxQuestions,
+		description: `Questions to ask the user (1-${maxQuestions} questions)`,
+	});
+}
 
-export const QuestionParamsSchema = Type.Object({
-	questions: QuestionsSchema,
-});
+export const QuestionsSchema = createQuestionsSchema();
+
+export function createQuestionParamsSchema(maxQuestions = MAX_QUESTIONS) {
+	return Type.Object({
+		questions: createQuestionsSchema(maxQuestions),
+	});
+}
+
+export const QuestionParamsSchema = createQuestionParamsSchema();
 
 export type OptionData = Static<typeof OptionSchema>;
 export type QuestionData = Static<typeof QuestionSchema>;

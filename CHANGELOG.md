@@ -2,6 +2,12 @@
 
 All notable changes to `@arumie/question-user` are documented here.
 
+## 1.0.0-alpha.2 — 2026-09-11
+
+- Increase the header length limit to 50 characters and the option-label limit to 200 characters.
+- Add configurable `maxQuestions` support, defaulting to four questions and applying to the schema, runtime validation, and prompt guidance.
+- Add regression coverage for configurable question limits and the expanded text limits.
+
 ## 1.0.0-alpha.1 — 2026-09-11
 
 - Include non-blank custom text from a multi-select `Type something.` row alongside checked options.

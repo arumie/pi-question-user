@@ -5,6 +5,7 @@ import {
 	formatKeySpecForDisplay,
 	loadConfig,
 	resolveCollapseKey,
+	resolveMaxQuestions,
 	validateGuidanceFields,
 } from "./config.js";
 import {
@@ -27,7 +28,7 @@ import {
 	type QuestionnaireError,
 	type QuestionnaireResult,
 	type QuestionParams,
-	QuestionParamsSchema,
+	createQuestionParamsSchema,
 } from "./tool/types.js";
 import { validateQuestionnaire } from "./tool/validate-questionnaire.js";
 import type { WrappingSelectItem } from "./view/components/wrapping-select.js";
@@ -271,13 +272,21 @@ export function buildItemsForQuestion(question: QuestionData): WrappingSelectIte
 	return items;
 }
 
-export const DEFAULT_PROMPT_SNIPPET = `Ask the user up to ${MAX_QUESTIONS} structured questions (${MIN_OPTIONS}-${MAX_OPTIONS} options each) when requirements are ambiguous`;
-export const DEFAULT_PROMPT_GUIDELINES: string[] = [
-	`Use question-user whenever the user's request is underspecified and you cannot proceed without concrete decisions — you can ask up to ${MAX_QUESTIONS} questions per invocation.`,
-	`Each question MUST have ${MIN_OPTIONS}-${MAX_OPTIONS} options. Every option requires a concise label (1-5 words) and a description explaining what the choice means or its trade-offs. The user can additionally type a custom answer via the automatically appended "Type something." row on every question; in multi-select mode, non-blank custom text is included alongside checked options. The user can press Esc to abandon the questionnaire. Do NOT author "Other" or "Type something." labels yourself — reserved labels are rejected at runtime.`,
-	`Set multiSelect: true when multiple answers are valid. Provide an options[].preview markdown string when an option benefits from richer side-by-side context (mockups, code snippets, diagrams, configs) — single-select only. The "Type something." row is appended to every question; in preview mode it expands to the full pane width while typing so the custom answer is not cramped into the narrow options column. If you recommend a specific option, make that the first option and append "(Recommended)" to its label.`,
-	"Do not stack multiple question-user calls back-to-back — group all clarifying questions into one invocation.",
-];
+export function buildDefaultPromptSnippet(maxQuestions = MAX_QUESTIONS): string {
+	return `Ask the user up to ${maxQuestions} structured questions (${MIN_OPTIONS}-${MAX_OPTIONS} options each) when requirements are ambiguous`;
+}
+
+export function buildDefaultPromptGuidelines(maxQuestions = MAX_QUESTIONS): string[] {
+	return [
+		`Use question-user whenever the user's request is underspecified and you cannot proceed without concrete decisions — you can ask up to ${maxQuestions} questions per invocation.`,
+		`Each question MUST have ${MIN_OPTIONS}-${MAX_OPTIONS} options. Every option requires a concise label (1-5 words) and a description explaining what the choice means or its trade-offs. The user can additionally type a custom answer via the automatically appended "Type something." row on every question; in multi-select mode, non-blank custom text is included alongside checked options. The user can press Esc to abandon the questionnaire. Do NOT author "Other" or "Type something." labels yourself — reserved labels are rejected at runtime.`,
+		`Set multiSelect: true when multiple answers are valid. Provide an options[].preview markdown string when an option benefits from richer side-by-side context (mockups, code snippets, diagrams, configs) — single-select only. The "Type something." row is appended to every question; in preview mode it expands to the full pane width while typing so the custom answer is not cramped into the narrow options column. If you recommend a specific option, make that the first option and append "(Recommended)" to its label.`,
+		"Do not stack multiple question-user calls back-to-back — group all clarifying questions into one invocation.",
+	];
+}
+
+export const DEFAULT_PROMPT_SNIPPET = buildDefaultPromptSnippet();
+export const DEFAULT_PROMPT_GUIDELINES: string[] = buildDefaultPromptGuidelines();
 
 export const DEFAULT_TOOL_DESCRIPTION = `Ask the user one or more structured questions during execution. Use when you need to:
 1. Gather user preferences or requirements
@@ -300,14 +309,16 @@ Use the optional \`preview\` field on options when presenting concrete artifacts
 Preview content is rendered as markdown in a monospace box. Multi-line text with newlines is supported. When any option has a preview, the UI switches to a side-by-side layout with a vertical option list on the left and preview on the right. Do not use previews for simple preference questions where labels and descriptions suffice. Note: previews are only supported for single-select questions (not multiSelect).`;
 
 export function registerQuestionUserTool(pi: ExtensionAPI): void {
-	const guidance = validateGuidanceFields(loadConfig().guidance);
+	const config = loadConfig();
+	const maxQuestions = resolveMaxQuestions(config.maxQuestions);
+	const guidance = validateGuidanceFields(config.guidance);
 	pi.registerTool({
 		name: QUESTION_USER_TOOL_NAME,
 		label: "Ask User Question",
 		description: guidance.description ?? DEFAULT_TOOL_DESCRIPTION,
-		promptSnippet: guidance.promptSnippet ?? DEFAULT_PROMPT_SNIPPET,
-		promptGuidelines: guidance.promptGuidelines ?? DEFAULT_PROMPT_GUIDELINES,
-		parameters: QuestionParamsSchema,
+		promptSnippet: guidance.promptSnippet ?? buildDefaultPromptSnippet(maxQuestions),
+		promptGuidelines: guidance.promptGuidelines ?? buildDefaultPromptGuidelines(maxQuestions),
+		parameters: createQuestionParamsSchema(maxQuestions),
 
 		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
 			// Line-terminator normalization runs once here, ahead of validation, so
@@ -316,7 +327,7 @@ export function registerQuestionUserTool(pi: ExtensionAPI): void {
 			const typed = normalizeQuestionParams(params as unknown as QuestionParams);
 			if (!ctx.hasUI) return rejectWithoutUi();
 
-			const validation = validateQuestionnaire(typed);
+			const validation = validateQuestionnaire(typed, maxQuestions);
 			if (!validation.ok) {
 				return buildToolResult(validation.message, {
 					answers: [],
