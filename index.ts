@@ -5,6 +5,7 @@
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { registerQuestionUserConfigCommand } from "./config-command.js";
 import { registerQuestionUserTool } from "./question-user.js";
 import { registerQuestionUserReconciler } from "./reconcile.js";
 
@@ -19,5 +20,6 @@ export {
 
 export default function (pi: ExtensionAPI) {
 	registerQuestionUserTool(pi);
+	registerQuestionUserConfigCommand(pi);
 	registerQuestionUserReconciler(pi);
 }

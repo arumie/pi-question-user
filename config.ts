@@ -1,6 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { isAbsolute, join } from "node:path";
+import { dirname, isAbsolute, join } from "node:path";
 import {
 	MAX_HEADER_LENGTH,
 	MAX_LABEL_LENGTH,
@@ -149,6 +149,10 @@ function loadJsonConfig<T>(path: string): T {
 	}
 }
 
+export function getConfigPath(): string {
+	return join(resolveConfigDir(), "question-user", "config.json");
+}
+
 function loadJsonConfigWithLegacyFallback<T>(name: string): T {
 	const configPath = join(resolveConfigDir(), name, "config.json");
 	if (existsSync(configPath)) return loadJsonConfig<T>(configPath);
@@ -157,6 +161,14 @@ function loadJsonConfigWithLegacyFallback<T>(name: string): T {
 
 export function loadConfig(): QuestionUserConfig {
 	return loadJsonConfigWithLegacyFallback<QuestionUserConfig>("question-user");
+}
+
+/** Write the package configuration to the active primary config path. */
+export function saveConfig(config: QuestionUserConfig): string {
+	const configPath = getConfigPath();
+	mkdirSync(dirname(configPath), { recursive: true });
+	writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
+	return configPath;
 }
 
 /** Resolve the configured minimum question count, falling back for missing or unusable values. */

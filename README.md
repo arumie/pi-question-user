@@ -34,7 +34,7 @@ The terminal dialog uses `↑`/`↓` to browse, `Enter` to select, `Tab` to move
 
 ## Configuration
 
-Optional settings live in `~/.config/question-user/config.json`; the file is read but never written.
+Optional settings are read from `~/.config/question-user/config.json` (or `$XDG_CONFIG_HOME/question-user/config.json` when `XDG_CONFIG_HOME` is set to an absolute path). Missing settings use the defaults below. Run `/question-user-config` in an interactive session to edit every setting through guided prompts; the command writes the file and reloads the extension after saving. Press `Esc` at any prompt to cancel without changing the configuration.
 
 | Setting | What it does | Default |
 | --- | --- | --- |
@@ -42,23 +42,30 @@ Optional settings live in `~/.config/question-user/config.json`; the file is rea
 | `maxQuestions` | Maximum number of questions accepted in one invocation. Must be a positive safe integer and no less than `minQuestions`. | `4` |
 | `minOptions` | Minimum number of authored options required per question. Must be a positive safe integer and no greater than `maxOptions`. | `2` |
 | `maxOptions` | Maximum number of authored options accepted per question. Must be a positive safe integer and no less than `minOptions`. | `12` |
-| `preferredMaxOptions` | Preferred authored option count supplied to the agent as guidance. Must be between `minOptions` and `maxOptions`; additional options remain allowed when necessary. | `4` |
+| `preferredMaxOptions` | Option count the agent should prefer when it sufficiently covers the choices. This is guidance, not a hard limit; the agent may use more options up to `maxOptions` when necessary. Must be between `minOptions` and `maxOptions`. | `4` |
 | `maxHeaderLength` | Maximum question-header length in characters. Must be a positive safe integer. | `50` |
 | `maxLabelLength` | Maximum option-label length in characters. Must be a positive safe integer. | `200` |
 | `collapseKey` | Key that collapses and expands the dialog. Use a Pi keybinding id such as `alt+o`; set it to `off` to disable the shortcut. | `ctrl+]` |
 | `guidance.description` | Replaces the complete tool description shown to the model when set to a non-empty string. | Built-in description |
 | `guidance.promptSnippet` | Replaces the one-line tool description in the system prompt. | Built-in snippet |
-| `guidance.promptGuidelines` | Replaces the built-in usage guidelines supplied to the model. | Four built-in guidelines |
+| `guidance.promptGuidelines` | Replaces the built-in usage guidelines supplied to the model. Provide a non-empty array of strings; the configuration command edits one guideline per line, and the values are not merged with the built-ins. | Four built-in guidelines |
 
 Example:
 
 ```json
-{ "minQuestions": 1, "maxQuestions": 8, "minOptions": 2, "maxOptions": 12, "preferredMaxOptions": 4, "maxHeaderLength": 50, "maxLabelLength": 200, "collapseKey": "alt+o" }
+{
+  "minQuestions": 1,
+  "maxQuestions": 4,
+  "minOptions": 2,
+  "maxOptions": 12,
+  "preferredMaxOptions": 4,
+  "maxHeaderLength": 50,
+  "maxLabelLength": 200,
+  "collapseKey": "alt+o"
+}
 ```
 
-Malformed JSON or unusable individual values fall back to the defaults with no hard failure. The configured limits are applied to the tool schema, runtime validation, and built-in prompt guidance.
-
-The dialog UI is intentionally English-only and has no localization dependency.
+Malformed JSON, invalid values, and inconsistent min/max relationships fall back safely without a hard failure. The effective limits are applied to the tool schema, runtime validation, and built-in prompt guidance. The dialog UI is intentionally English-only and has no localization dependency.
 
 ## Requirements
 

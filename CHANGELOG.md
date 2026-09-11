@@ -2,6 +2,10 @@
 
 All notable changes to `@arumie/question-user` are documented here.
 
+## 1.2.0 — 2026-09-11
+
+- Add the `/question-user-config` session command for editing and saving all package settings.
+
 ## 1.1.0 — 2026-09-11
 
 - Make question, option, header, and option-label min/max limits configurable.

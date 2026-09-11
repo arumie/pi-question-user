@@ -11,11 +11,13 @@ const manifest = JSON.parse(await readFile(new URL("../package.json", import.met
   peerDependencies?: Record<string, string>;
 };
 const entrypoint = await readFile(new URL("../question-user.ts", import.meta.url), "utf8");
+const extensionEntrypoint = await readFile(new URL("../index.ts", import.meta.url), "utf8");
 
 test("package manifest ships and registers the question-user extension", () => {
   assert.equal(manifest.name, "@arumie/question-user");
   assert.deepEqual(manifest.pi?.extensions, ["./index.ts"]);
   assert.ok(manifest.files?.includes("question-user.ts"));
+  assert.ok(manifest.files?.includes("config-command.ts"));
   assert.ok(manifest.files?.includes("events.ts"));
   assert.ok(manifest.files?.includes("state/"));
   assert.ok(manifest.files?.includes("tool/"));
@@ -29,7 +31,9 @@ test("package manifest ships and registers the question-user extension", () => {
   assert.ok(!Object.keys(allDependencies).some((name) => name.startsWith("@juicesharp/")));
 });
 
-test("the extension registers the renamed tool", () => {
+test("the extension registers the renamed tool and config command", () => {
   assert.match(entrypoint, /QUESTION_USER_TOOL_NAME = "question-user"/);
   assert.match(entrypoint, /name: QUESTION_USER_TOOL_NAME/);
+  assert.match(extensionEntrypoint, /registerQuestionUserConfigCommand/);
+  assert.match(extensionEntrypoint, /registerQuestionUserConfigCommand\(pi\)/);
 });
