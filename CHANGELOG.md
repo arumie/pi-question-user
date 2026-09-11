@@ -2,6 +2,10 @@
 
 All notable changes to `@arumie/question-user` are documented here.
 
+## 1.2.1 — 2026-09-11
+
+- Return to the configuration list when editing is cancelled with `Esc`; use `Ctrl+S` to save from the list.
+
 ## 1.2.0 — 2026-09-11
 
 - Add the `/question-user-config` session command for editing and saving all package settings.

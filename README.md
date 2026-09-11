@@ -34,7 +34,7 @@ The terminal dialog uses `↑`/`↓` to browse, `Enter` to select, `Tab` to move
 
 ## Configuration
 
-Optional settings are read from `~/.config/question-user/config.json` (or `$XDG_CONFIG_HOME/question-user/config.json` when `XDG_CONFIG_HOME` is set to an absolute path). Missing settings use the defaults below. Run `/question-user-config` in an interactive session to edit every setting through guided prompts; the command writes the file and reloads the extension after saving. Press `Esc` at any prompt to cancel without changing the configuration.
+Optional settings are read from `~/.config/question-user/config.json` (or `$XDG_CONFIG_HOME/question-user/config.json` when `XDG_CONFIG_HOME` is set to an absolute path). Missing settings use the defaults below. Run `/question-user-config` in an interactive session to choose settings from a navigable list and edit them with guided prompts. Press `Esc` while editing to return to the list, `Ctrl+S` to write the file and reload the extension, or `Esc` from the list to exit without saving.
 
 | Setting | What it does | Default |
 | --- | --- | --- |
