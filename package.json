@@ -1,6 +1,6 @@
 {
 	"name": "@arumie/question-user",
-	"version": "1.2.1",
+	"version": "1.2.2",
 	"description": "A Git-installable pi extension that lets the model ask structured questions instead of guessing.",
 	"keywords": [
 		"pi-package",

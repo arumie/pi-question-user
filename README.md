@@ -26,7 +26,7 @@ pi -e /absolute/path/to/pi-question-user
 
 - Presents up to the configured question limit in one tabbed dialog (four by default), with 2–12 authored options per question by default; prefer four or fewer when sufficient.
 - Appends a `Type something.` row so the user can always answer in their own words; in multi-select mode, non-blank custom text is selected alongside checked options.
-- Supports markdown previews, multiline answers, external-editor input, and per-question or global notes.
+- Supports markdown previews, multiline answers, external-editor input, and per-question or global notes. Preview values should use actual newline characters rather than literal `\n` text.
 - Returns structured answers to the model and works in terminal, RPC, and ACP hosts.
 - Removes the tool from non-interactive runs instead of failing every call.
 

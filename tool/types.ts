@@ -52,7 +52,7 @@ export function createOptionSchema(maxLabelLength = MAX_LABEL_LENGTH) {
 		preview: Type.Optional(
 			Type.String({
 			description:
-				"Optional preview content rendered when this option is focused. Use for mockups, code snippets, or visual comparisons that help users compare options. See the tool description for the expected content format.",
+				"Optional preview content rendered when this option is focused. Use markdown with newline characters for mockups, code snippets, or visual comparisons that help users compare options; do not double-escape line breaks into literal backslash-n text. See the tool description for the expected content format.",
 		}),
 	),
 	});
