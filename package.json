@@ -1,0 +1,66 @@
+{
+	"name": "@arumie/question-user",
+	"version": "1.0.0-alpha",
+	"description": "A Git-installable pi extension that lets the model ask structured questions instead of guessing.",
+	"keywords": [
+		"pi-package",
+		"pi-extension",
+		"question-user"
+	],
+	"type": "module",
+	"exports": {
+		".": "./index.ts",
+		"./events": "./events.ts"
+	},
+	"license": "MIT",
+	"author": "arumie",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/arumie/pi-question-user.git"
+	},
+	"homepage": "https://github.com/arumie/pi-question-user#readme",
+	"bugs": {
+		"url": "https://github.com/arumie/pi-question-user/issues"
+	},
+	"scripts": {
+		"test": "node --experimental-strip-types test/package-manifest.test.ts",
+		"typecheck": "tsc --noEmit",
+		"pack:check": "npm pack --dry-run",
+		"release:check": "npm test && npm run typecheck && npm run pack:check"
+	},
+	"files": [
+		"question-user.ts",
+		"config.ts",
+		"events.ts",
+		"index.ts",
+		"reconcile.ts",
+		"rpc-fallback.ts",
+		"state/",
+		"tool/",
+		"view/",
+		"README.md",
+		"CHANGELOG.md",
+		"LICENSE"
+	],
+	"pi": {
+		"extensions": [
+			"./index.ts"
+		]
+	},
+	"peerDependencies": {
+		"@earendil-works/pi-coding-agent": "*",
+		"@earendil-works/pi-tui": "*"
+	},
+	"dependencies": {
+		"typebox": "^1.1.24"
+	},
+	"devDependencies": {
+		"@earendil-works/pi-coding-agent": "*",
+		"@earendil-works/pi-tui": "*",
+		"@types/node": "^22.0.0",
+		"typescript": "^5.7.0"
+	},
+	"engines": {
+		"node": ">=22"
+	}
+}
