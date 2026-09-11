@@ -2,6 +2,11 @@
 
 All notable changes to `@arumie/question-user` are documented here.
 
+## 1.1.0 — 2026-09-11
+
+- Make question, option, header, and option-label min/max limits configurable.
+- Allow the agent to prefer four or fewer options while permitting the configured maximum when necessary.
+
 ## 1.0.0 — 2026-09-11
 
 - Promote the tested Git-installable release to stable `1.0.0`.

@@ -5,7 +5,13 @@ import {
 	formatKeySpecForDisplay,
 	loadConfig,
 	resolveCollapseKey,
+	resolveMaxHeaderLength,
+	resolveMaxLabelLength,
+	resolveMaxOptions,
 	resolveMaxQuestions,
+	resolveMinOptions,
+	resolveMinQuestions,
+	resolvePreferredMaxOptions,
 	validateGuidanceFields,
 } from "./config.js";
 import {
@@ -24,6 +30,8 @@ import {
 	MAX_OPTIONS,
 	MAX_QUESTIONS,
 	MIN_OPTIONS,
+	MIN_QUESTIONS,
+	PREFERRED_MAX_OPTIONS,
 	type QuestionData,
 	type QuestionnaireError,
 	type QuestionnaireResult,
@@ -272,14 +280,26 @@ export function buildItemsForQuestion(question: QuestionData): WrappingSelectIte
 	return items;
 }
 
-export function buildDefaultPromptSnippet(maxQuestions = MAX_QUESTIONS): string {
-	return `Ask the user up to ${maxQuestions} structured questions (${MIN_OPTIONS}-${MAX_OPTIONS} options each) when requirements are ambiguous`;
+export function buildDefaultPromptSnippet(
+	maxQuestions = MAX_QUESTIONS,
+	minQuestions = MIN_QUESTIONS,
+	minOptions = MIN_OPTIONS,
+	maxOptions = MAX_OPTIONS,
+	preferredMaxOptions = PREFERRED_MAX_OPTIONS,
+): string {
+	return `Ask the user ${minQuestions}-${maxQuestions} structured questions (${minOptions}-${maxOptions} options each; prefer ${preferredMaxOptions} or fewer when possible) when requirements are ambiguous`;
 }
 
-export function buildDefaultPromptGuidelines(maxQuestions = MAX_QUESTIONS): string[] {
+export function buildDefaultPromptGuidelines(
+	maxQuestions = MAX_QUESTIONS,
+	minQuestions = MIN_QUESTIONS,
+	minOptions = MIN_OPTIONS,
+	maxOptions = MAX_OPTIONS,
+	preferredMaxOptions = PREFERRED_MAX_OPTIONS,
+): string[] {
 	return [
-		`Use question-user whenever the user's request is underspecified and you cannot proceed without concrete decisions — you can ask up to ${maxQuestions} questions per invocation.`,
-		`Each question MUST have ${MIN_OPTIONS}-${MAX_OPTIONS} options. Every option requires a concise label (1-5 words) and a description explaining what the choice means or its trade-offs. The user can additionally type a custom answer via the automatically appended "Type something." row on every question; in multi-select mode, non-blank custom text is included alongside checked options. The user can press Esc to abandon the questionnaire. Do NOT author "Other" or "Type something." labels yourself — reserved labels are rejected at runtime.`,
+		`Use question-user whenever the user's request is underspecified and you cannot proceed without concrete decisions — ask between ${minQuestions} and ${maxQuestions} questions per invocation.`,
+		`Each question MUST have ${minOptions}-${maxOptions} options. Prefer ${preferredMaxOptions} or fewer options when they sufficiently cover the choices, and use additional options only when necessary. Every option requires a concise label (1-5 words) and a description explaining what the choice means or its trade-offs. The user can additionally type a custom answer via the automatically appended "Type something." row on every question; in multi-select mode, non-blank custom text is included alongside checked options. The user can press Esc to abandon the questionnaire. Do NOT author "Other" or "Type something." labels yourself — reserved labels are rejected at runtime.`,
 		`Set multiSelect: true when multiple answers are valid. Provide an options[].preview markdown string when an option benefits from richer side-by-side context (mockups, code snippets, diagrams, configs) — single-select only. The "Type something." row is appended to every question; in preview mode it expands to the full pane width while typing so the custom answer is not cramped into the narrow options column. If you recommend a specific option, make that the first option and append "(Recommended)" to its label.`,
 		"Do not stack multiple question-user calls back-to-back — group all clarifying questions into one invocation.",
 	];
@@ -310,15 +330,33 @@ Preview content is rendered as markdown in a monospace box. Multi-line text with
 
 export function registerQuestionUserTool(pi: ExtensionAPI): void {
 	const config = loadConfig();
-	const maxQuestions = resolveMaxQuestions(config.maxQuestions);
+	const minQuestions = resolveMinQuestions(config.minQuestions);
+	const maxQuestions = resolveMaxQuestions(config.maxQuestions, minQuestions);
+	const minOptions = resolveMinOptions(config.minOptions);
+	const maxOptions = resolveMaxOptions(config.maxOptions, minOptions);
+	const preferredMaxOptions = resolvePreferredMaxOptions(config.preferredMaxOptions, minOptions, maxOptions);
+	const maxHeaderLength = resolveMaxHeaderLength(config.maxHeaderLength);
+	const maxLabelLength = resolveMaxLabelLength(config.maxLabelLength);
+	const schemaLimits = {
+		minQuestions,
+		minOptions,
+		maxOptions,
+		preferredMaxOptions,
+		maxHeaderLength,
+		maxLabelLength,
+	};
 	const guidance = validateGuidanceFields(config.guidance);
 	pi.registerTool({
 		name: QUESTION_USER_TOOL_NAME,
 		label: "Ask User Question",
 		description: guidance.description ?? DEFAULT_TOOL_DESCRIPTION,
-		promptSnippet: guidance.promptSnippet ?? buildDefaultPromptSnippet(maxQuestions),
-		promptGuidelines: guidance.promptGuidelines ?? buildDefaultPromptGuidelines(maxQuestions),
-		parameters: createQuestionParamsSchema(maxQuestions),
+		promptSnippet:
+			guidance.promptSnippet ??
+			buildDefaultPromptSnippet(maxQuestions, minQuestions, minOptions, maxOptions, preferredMaxOptions),
+		promptGuidelines:
+			guidance.promptGuidelines ??
+			buildDefaultPromptGuidelines(maxQuestions, minQuestions, minOptions, maxOptions, preferredMaxOptions),
+		parameters: createQuestionParamsSchema(maxQuestions, schemaLimits),
 
 		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
 			// Line-terminator normalization runs once here, ahead of validation, so
@@ -327,7 +365,15 @@ export function registerQuestionUserTool(pi: ExtensionAPI): void {
 			const typed = normalizeQuestionParams(params as unknown as QuestionParams);
 			if (!ctx.hasUI) return rejectWithoutUi();
 
-			const validation = validateQuestionnaire(typed, maxQuestions);
+			const validation = validateQuestionnaire(
+				typed,
+				maxQuestions,
+				maxOptions,
+				minQuestions,
+				minOptions,
+				maxHeaderLength,
+				maxLabelLength,
+			);
 			if (!validation.ok) {
 				return buildToolResult(validation.message, {
 					answers: [],

@@ -1,9 +1,11 @@
 import { type Static, Type } from "typebox";
 import { LABELS_BY_KIND, ROW_INTENT_META } from "../state/row-intent.js";
 
+export const MIN_QUESTIONS = 1;
 export const MAX_QUESTIONS = 4;
 export const MIN_OPTIONS = 2;
-export const MAX_OPTIONS = 4;
+export const PREFERRED_MAX_OPTIONS = 4;
+export const MAX_OPTIONS = 12;
 export const MAX_HEADER_LENGTH = 50;
 export const MAX_LABEL_LENGTH = 200;
 
@@ -37,37 +39,56 @@ export type SentinelLabel = (typeof SENTINEL_LABELS)[SentinelKind];
 export const RESERVED_LABELS = ["Other", ROW_INTENT_META.other.label, ROW_INTENT_META.next.label] as const;
 export type ReservedLabel = (typeof RESERVED_LABELS)[number];
 
-export const OptionSchema = Type.Object({
-	label: Type.String({
-		maxLength: MAX_LABEL_LENGTH,
-		description: `MAX ${MAX_LABEL_LENGTH} CHARACTERS — hard limit, requests over the limit are rejected. The display text for this option that the user will see and select. Should be concise (1-5 words) and clearly describe the choice.`,
-	}),
-	description: Type.String({
-		description:
-			"Explanation of what this option means or what will happen if chosen. Useful for providing context about trade-offs or implications.",
-	}),
-	preview: Type.Optional(
-		Type.String({
+export function createOptionSchema(maxLabelLength = MAX_LABEL_LENGTH) {
+	return Type.Object({
+		label: Type.String({
+			maxLength: maxLabelLength,
+			description: `MAX ${maxLabelLength} CHARACTERS — hard limit, requests over the limit are rejected. The display text for this option that the user will see and select. Should be concise (1-5 words) and clearly describe the choice.`,
+		}),
+		description: Type.String({
+			description:
+				"Explanation of what this option means or what will happen if chosen. Useful for providing context about trade-offs or implications.",
+		}),
+		preview: Type.Optional(
+			Type.String({
 			description:
 				"Optional preview content rendered when this option is focused. Use for mockups, code snippets, or visual comparisons that help users compare options. See the tool description for the expected content format.",
 		}),
 	),
-});
+	});
+}
 
-export const QuestionSchema = Type.Object({
+export const OptionSchema = createOptionSchema();
+
+export interface QuestionSchemaLimits {
+	minQuestions?: number;
+	minOptions?: number;
+	maxOptions?: number;
+	preferredMaxOptions?: number;
+	maxHeaderLength?: number;
+	maxLabelLength?: number;
+}
+
+export function createQuestionSchema(limits: QuestionSchemaLimits = {}) {
+	const minOptions = limits.minOptions ?? MIN_OPTIONS;
+	const maxOptions = limits.maxOptions ?? MAX_OPTIONS;
+	const preferredMaxOptions = limits.preferredMaxOptions ?? PREFERRED_MAX_OPTIONS;
+	const maxHeaderLength = limits.maxHeaderLength ?? MAX_HEADER_LENGTH;
+
+	return Type.Object({
 	question: Type.String({
 		description:
 			'The complete question to ask the user. Should be clear, specific, and end with a question mark. Example: "Which library should we use for date formatting?" If multiSelect is true, phrase it accordingly, e.g. "Which features do you want to enable?"',
 	}),
 	header: Type.String({
-		maxLength: MAX_HEADER_LENGTH,
-		description: `MAX ${MAX_HEADER_LENGTH} CHARACTERS — hard limit, requests over the limit are rejected. Very short chip/tag shown next to the question. Examples: "Auth method", "Library", "Approach".`,
+			maxLength: maxHeaderLength,
+			description: `MAX ${maxHeaderLength} CHARACTERS — hard limit, requests over the limit are rejected. Very short chip/tag shown next to the question. Examples: "Auth method", "Library", "Approach".`,
 	}),
-	options: Type.Array(OptionSchema, {
-		minItems: MIN_OPTIONS,
-		maxItems: MAX_OPTIONS,
-		description:
-			"The available choices for this question. Must have 2-4 options. Each option should be a distinct, mutually exclusive choice (unless multiSelect is enabled). The 'Type something.' row is appended automatically — do NOT author it.",
+		options: Type.Array(createOptionSchema(limits.maxLabelLength), {
+			minItems: minOptions,
+			maxItems: maxOptions,
+			description:
+				`The available choices for this question. Must have ${minOptions}-${maxOptions} options; use ${preferredMaxOptions} or fewer when that sufficiently covers the choices, and add more only when necessary. Each option should be a distinct, mutually exclusive choice (unless multiSelect is enabled). The 'Type something.' row is appended automatically — do NOT author it.`,
 	}),
 	multiSelect: Type.Optional(
 		Type.Boolean({
@@ -76,21 +97,31 @@ export const QuestionSchema = Type.Object({
 				"Set to true to allow the user to select multiple options instead of just one. Use when choices are not mutually exclusive.",
 		}),
 	),
-});
+	});
+}
 
-export function createQuestionsSchema(maxQuestions = MAX_QUESTIONS) {
-	return Type.Array(QuestionSchema, {
-		minItems: 1,
+export const QuestionSchema = createQuestionSchema();
+
+export function createQuestionsSchema(
+	maxQuestions = MAX_QUESTIONS,
+	limits: QuestionSchemaLimits = {},
+) {
+	const minQuestions = limits.minQuestions ?? MIN_QUESTIONS;
+	return Type.Array(createQuestionSchema(limits), {
+		minItems: minQuestions,
 		maxItems: maxQuestions,
-		description: `Questions to ask the user (1-${maxQuestions} questions)`,
+		description: `Questions to ask the user (${minQuestions}-${maxQuestions} questions)`,
 	});
 }
 
 export const QuestionsSchema = createQuestionsSchema();
 
-export function createQuestionParamsSchema(maxQuestions = MAX_QUESTIONS) {
+export function createQuestionParamsSchema(
+	maxQuestions = MAX_QUESTIONS,
+	limits: QuestionSchemaLimits = {},
+) {
 	return Type.Object({
-		questions: createQuestionsSchema(maxQuestions),
+		questions: createQuestionsSchema(maxQuestions, limits),
 	});
 }
 
@@ -132,9 +163,13 @@ export type QuestionnaireError =
 	| "no_ui"
 	| "no_custom_ui"
 	| "no_questions"
+	| "too_few_questions"
 	| "empty_options"
+	| "too_many_options"
 	| "too_many_questions"
 	| "duplicate_question"
+	| "header_too_long"
+	| "option_label_too_long"
 	| "duplicate_option_label"
 	| "reserved_label"
 	| "session_load_failed"

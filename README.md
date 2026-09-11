@@ -24,7 +24,7 @@ pi -e /absolute/path/to/pi-question-user
 
 ## What it does
 
-- Presents up to the configured question limit in one tabbed dialog (four by default), with 2–4 authored options per question.
+- Presents up to the configured question limit in one tabbed dialog (four by default), with 2–12 authored options per question by default; prefer four or fewer when sufficient.
 - Appends a `Type something.` row so the user can always answer in their own words; in multi-select mode, non-blank custom text is selected alongside checked options.
 - Supports markdown previews, multiline answers, external-editor input, and per-question or global notes.
 - Returns structured answers to the model and works in terminal, RPC, and ACP hosts.
@@ -38,7 +38,13 @@ Optional settings live in `~/.config/question-user/config.json`; the file is rea
 
 | Setting | What it does | Default |
 | --- | --- | --- |
-| `maxQuestions` | Maximum number of questions accepted in one invocation. Must be a positive safe integer. | `4` |
+| `minQuestions` | Minimum number of questions required in one invocation. Must be a positive safe integer and no greater than `maxQuestions`. | `1` |
+| `maxQuestions` | Maximum number of questions accepted in one invocation. Must be a positive safe integer and no less than `minQuestions`. | `4` |
+| `minOptions` | Minimum number of authored options required per question. Must be a positive safe integer and no greater than `maxOptions`. | `2` |
+| `maxOptions` | Maximum number of authored options accepted per question. Must be a positive safe integer and no less than `minOptions`. | `12` |
+| `preferredMaxOptions` | Preferred authored option count supplied to the agent as guidance. Must be between `minOptions` and `maxOptions`; additional options remain allowed when necessary. | `4` |
+| `maxHeaderLength` | Maximum question-header length in characters. Must be a positive safe integer. | `50` |
+| `maxLabelLength` | Maximum option-label length in characters. Must be a positive safe integer. | `200` |
 | `collapseKey` | Key that collapses and expands the dialog. Use a Pi keybinding id such as `alt+o`; set it to `off` to disable the shortcut. | `ctrl+]` |
 | `guidance.description` | Replaces the complete tool description shown to the model when set to a non-empty string. | Built-in description |
 | `guidance.promptSnippet` | Replaces the one-line tool description in the system prompt. | Built-in snippet |
@@ -47,10 +53,10 @@ Optional settings live in `~/.config/question-user/config.json`; the file is rea
 Example:
 
 ```json
-{ "maxQuestions": 8, "collapseKey": "alt+o" }
+{ "minQuestions": 1, "maxQuestions": 8, "minOptions": 2, "maxOptions": 12, "preferredMaxOptions": 4, "maxHeaderLength": 50, "maxLabelLength": 200, "collapseKey": "alt+o" }
 ```
 
-Malformed JSON or unusable individual values fall back to the defaults with no hard failure. The configured question limit is applied to the tool schema, runtime validation, and built-in prompt guidance.
+Malformed JSON or unusable individual values fall back to the defaults with no hard failure. The configured limits are applied to the tool schema, runtime validation, and built-in prompt guidance.
 
 The dialog UI is intentionally English-only and has no localization dependency.
 

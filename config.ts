@@ -1,7 +1,15 @@
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { isAbsolute, join } from "node:path";
-import { MAX_QUESTIONS } from "./tool/types.js";
+import {
+	MAX_HEADER_LENGTH,
+	MAX_LABEL_LENGTH,
+	MAX_OPTIONS,
+	MAX_QUESTIONS,
+	MIN_OPTIONS,
+	MIN_QUESTIONS,
+	PREFERRED_MAX_OPTIONS,
+} from "./tool/types.js";
 
 /** Key spec for the overlay collapse/expand shortcut, e.g. `"ctrl+]"` or `"alt+o"`. */
 export type CollapseKeySpec = string;
@@ -16,8 +24,20 @@ export interface GuidanceFields {
 }
 
 export interface QuestionUserConfig {
+	/** Minimum number of questions accepted per tool invocation. Defaults to 1. */
+	minQuestions?: number;
 	/** Maximum number of questions accepted per tool invocation. Defaults to 4. */
 	maxQuestions?: number;
+	/** Minimum number of authored options accepted per question. Defaults to 2. */
+	minOptions?: number;
+	/** Maximum number of authored options accepted per question. Defaults to 12. */
+	maxOptions?: number;
+	/** Preferred authored option count supplied to the agent as guidance. Defaults to 4. */
+	preferredMaxOptions?: number;
+	/** Maximum question-header length. Defaults to 50. */
+	maxHeaderLength?: number;
+	/** Maximum option-label length. Defaults to 200. */
+	maxLabelLength?: number;
 	guidance?: GuidanceFields;
 	/**
 	 * Key spec for the collapse/expand shortcut, in the same format as pi-coding-agent
@@ -139,9 +159,53 @@ export function loadConfig(): QuestionUserConfig {
 	return loadJsonConfigWithLegacyFallback<QuestionUserConfig>("question-user");
 }
 
-/** Resolve the configured question limit, falling back for missing or unusable values. */
-export function resolveMaxQuestions(value: unknown): number {
-	return typeof value === "number" && Number.isSafeInteger(value) && value >= 1 ? value : MAX_QUESTIONS;
+/** Resolve the configured minimum question count, falling back for missing or unusable values. */
+export function resolveMinQuestions(value: unknown): number {
+	return typeof value === "number" && Number.isSafeInteger(value) && value >= 1 ? value : MIN_QUESTIONS;
+}
+
+/** Resolve the configured maximum question count, keeping it at or above the minimum. */
+export function resolveMaxQuestions(value: unknown, minQuestions = MIN_QUESTIONS): number {
+	const fallback = Math.max(MAX_QUESTIONS, minQuestions);
+	return typeof value === "number" && Number.isSafeInteger(value) && value >= minQuestions ? value : fallback;
+}
+
+/** Resolve the configured minimum authored option count. */
+export function resolveMinOptions(value: unknown): number {
+	return typeof value === "number" && Number.isSafeInteger(value) && value >= 1 ? value : MIN_OPTIONS;
+}
+
+/** Resolve the configured maximum authored option count, keeping it at or above the minimum. */
+export function resolveMaxOptions(value: unknown, minOptions = MIN_OPTIONS): number {
+	const fallback = Math.max(MAX_OPTIONS, minOptions);
+	return typeof value === "number" && Number.isSafeInteger(value) && value >= minOptions ? value : fallback;
+}
+
+/** Resolve the configured preferred option count, keeping it within the effective range. */
+export function resolvePreferredMaxOptions(
+	value: unknown,
+	minOptions = MIN_OPTIONS,
+	maxOptions = MAX_OPTIONS,
+): number {
+	const fallback = Math.min(Math.max(PREFERRED_MAX_OPTIONS, minOptions), maxOptions);
+	return typeof value === "number" && Number.isSafeInteger(value) && value >= minOptions && value <= maxOptions
+		? value
+		: fallback;
+}
+
+/** Resolve a configured text-length maximum. */
+function resolveMaxTextLength(value: unknown, fallback: number): number {
+	return typeof value === "number" && Number.isSafeInteger(value) && value >= 1 ? value : fallback;
+}
+
+/** Resolve the configured question-header length limit. */
+export function resolveMaxHeaderLength(value: unknown): number {
+	return resolveMaxTextLength(value, MAX_HEADER_LENGTH);
+}
+
+/** Resolve the configured option-label length limit. */
+export function resolveMaxLabelLength(value: unknown): number {
+	return resolveMaxTextLength(value, MAX_LABEL_LENGTH);
 }
 
 /** Extract only valid guidance overrides from an untrusted config value. */
