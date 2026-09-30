@@ -1,6 +1,6 @@
 {
 	"name": "@arumie/question-user",
-	"version": "1.2.2",
+	"version": "1.2.3",
 	"description": "A Git-installable pi extension that lets the model ask structured questions instead of guessing.",
 	"keywords": [
 		"pi-package",
@@ -50,10 +50,8 @@
 	},
 	"peerDependencies": {
 		"@earendil-works/pi-coding-agent": "*",
-		"@earendil-works/pi-tui": "*"
-	},
-	"dependencies": {
-		"typebox": "^1.1.24"
+		"@earendil-works/pi-tui": "*",
+		"typebox": "*"
 	},
 	"devDependencies": {
 		"@earendil-works/pi-coding-agent": "*",

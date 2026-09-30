@@ -2,6 +2,10 @@
 
 All notable changes to `@arumie/question-user` are documented here.
 
+## 1.2.3 — 2026-09-30
+
+- Declare the host-provided `typebox` package as a peer dependency to prevent duplicate runtime modules.
+
 ## 1.2.2 — 2026-09-11
 
 - Clarify that preview markdown must use real newline characters instead of literal `\n` text.
